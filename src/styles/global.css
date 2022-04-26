@@ -25,6 +25,39 @@ body {
   width: 650px;
 }
 
+.app .app-content .loading {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.app .app-content .options {
+  margin-top: 20px;
+  align-self: flex-end;
+}
+
+.app .app-content .options span  {
+  font-weight: 700;
+  background-color: #4a148c;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+
+  transition: filter 0.2s;
+}
+
+.app .app-content .options span:hover  {
+  filter: brightness(0.4);
+}
+
+.app .app-content .options span.selected  {
+  filter: brightness(0.4);
+}
+
+.app .app-content .options span + span {
+  margin-left: 15px;
+}
+
 .app .app-content input {
   height: 3rem;
 
@@ -41,16 +74,33 @@ body {
   border-radius: 8px;
   border: none;
   outline: none;
-  cursor: pointer;
-
-  background-color: #4a148c;
-  color: #f3e5f5;
-
   transition: filter 0.2s;
+
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+
+}
+
+.app .app-content button:disabled {
+  background-color: #9e9e9e !important;
+  filter: brightness(1) !important;
 }
 
 .app .app-content button:hover {
   filter: brightness(0.8);
+}
+
+.app .app-content button.send {
+  background-color: #4a148c;
+  color: #f3e5f5;
+}
+
+.app .app-content button.reset {
+  background-color: #03a9f4;
+  color: #f3e5f5;
+  width: 250px;
+  align-self: center;
 }
 
 .app .app-content .app-progress {
@@ -58,16 +108,11 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin-top: 20px;
+  margin: 20px 0;
   font-size: 20px;
 }
 
-.app .app-content #loading {
-  font-size: 25px;
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
+
 
 .app .app-content .app-progress p + p {
   margin-top: 10px;

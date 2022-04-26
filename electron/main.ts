@@ -1,4 +1,5 @@
 import path from 'path'
+import fs from 'fs'
 import { exec } from 'child_process'
 import { app, BrowserWindow, ipcMain } from 'electron'
 
@@ -29,9 +30,20 @@ function createWindow() {
 
 async function registerListeners() {
   ipcMain.on('message', (event, message) => {
-    const youtubeDlPath = path.join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'youtube-dl.exe')
-    console.log(youtubeDlPath)
-    const download = exec(`${youtubeDlPath} -x --audio-format mp3 ${message}`)
+    const [url, format] = message.split('||')
+
+    console.log(url)
+    console.log(format)
+
+    const downloaderPath = path.join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'youtube-dl.exe')
+    const output = '%USERPROFILE%/Downloads/%(title)s.%(ext)s'
+    const command =
+      format === 'mp3'
+        ? `${downloaderPath} -x --audio-format mp3 -o ${output} ${url}`
+        : `${downloaderPath} -o ${output} ${url}`
+
+    const download = exec(command)
+
     download.stdout?.on('data', data => {
       let output = data
         .trim()
@@ -45,6 +57,10 @@ async function registerListeners() {
           estimated: output[7],
         })
       }
+    })
+
+    download.stdout?.on('error', () => {
+      event.reply('download failed, try again')
     })
 
     download.stdout?.on('end', data => {
@@ -65,6 +81,10 @@ async function registerListeners() {
 
     download.stderr?.on('data', data => {
       console.log('data', data)
+    })
+
+    download.stderr?.on('error', () => {
+      event.reply('download failed, try again')
     })
   })
 }
