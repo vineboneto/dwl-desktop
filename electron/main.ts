@@ -32,9 +32,6 @@ async function registerListeners() {
   ipcMain.on('message', (event, message) => {
     const [url, format] = message.split('||')
 
-    console.log(url)
-    console.log(format)
-
     const downloaderPath = path.join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'youtube-dl.exe')
     const output = '%USERPROFILE%/Downloads/%(title)s.%(ext)s'
     const command =
