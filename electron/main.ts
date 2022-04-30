@@ -52,8 +52,6 @@ async function registerListeners() {
     } else {
       const [channel_, url, title, ext] = message.split('||')
 
-      console.log(message)
-
       const isValidUrl = ytdl.validateURL(url)
 
       if (!isValidUrl) {
@@ -82,12 +80,11 @@ async function registerListeners() {
           downloadedSeconds,
           estimated,
         })
+      })
+      stream.pipe(fs.createWriteStream(`${process.env.USERPROFILE}/Downloads/${title}.${ext}`))
 
-        stream.pipe(fs.createWriteStream(`${process.env.USERPROFILE}/Downloads/${title}.${ext}`))
-
-        stream.on('end', () => {
-          event.reply('OK')
-        })
+      stream.on('end', () => {
+        event.reply('OK')
       })
     }
   })
