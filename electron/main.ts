@@ -1,6 +1,6 @@
+import ytdl from 'ytdl-core'
 import path from 'path'
 import fs from 'fs'
-import { exec } from 'child_process'
 import { app, BrowserWindow, ipcMain } from 'electron'
 
 let mainWindow: BrowserWindow | null
@@ -29,60 +29,67 @@ function createWindow() {
 }
 
 async function registerListeners() {
-  ipcMain.on('message', (event, message) => {
-    const [url, format] = message.split('||')
+  ipcMain.on('message', async (event, message) => {
+    const [channel] = message.split('||')
+    if (channel === 'INFO') {
+      const [channel_, url] = message.split('||')
 
-    const downloaderPath = path.join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'youtube-dl.exe')
-    const output = '%USERPROFILE%/Downloads/%(title)s.%(ext)s'
-    const command =
-      format === 'mp3'
-        ? `${downloaderPath} -x --audio-format mp3 -o ${output} ${url}`
-        : `${downloaderPath} -o ${output} ${url}`
+      const isValidUrl = ytdl.validateURL(url)
 
-    const download = exec(command)
-
-    download.stdout?.on('data', data => {
-      let output = data
-        .trim()
-        .split(' ')
-        .filter(n => n)
-      if (output[0] === '[download]' && parseFloat(output[1])) {
-        event.reply('URL:PROGRESS', {
-          progress: parseFloat(output[1]),
-          size: output[3],
-          transferred: output[5],
-          estimated: output[7],
-        })
+      if (!isValidUrl) {
+        event.reply('INFO', 'ERROR')
       }
-    })
 
-    download.stdout?.on('error', () => {
-      event.reply('download failed, try again')
-    })
+      const [_, ID] = url?.split('watch?v=')
 
-    download.stdout?.on('end', data => {
-      console.log('stdout end', data)
-    })
+      const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${ID}`)
 
-    download.stdout?.on('close', data => {
-      console.log('stdout close', data)
-    })
+      event.reply('INFO', {
+        title: info.videoDetails.title,
+        seconds: Number(info.videoDetails.lengthSeconds),
+        thumbnail: info.videoDetails.thumbnails[0],
+      })
+    } else {
+      const [channel_, url, title, ext] = message.split('||')
 
-    download.stderr?.on('end', data => {
-      console.log('end', data)
-    })
+      console.log(message)
 
-    download.stderr?.on('close', data => {
-      console.log('close', data)
-    })
+      const isValidUrl = ytdl.validateURL(url)
 
-    download.stderr?.on('data', data => {
-      console.log('data', data)
-    })
+      if (!isValidUrl) {
+        event.reply('URL:PROGRESS', 'ERROR')
+      }
 
-    download.stderr?.on('error', () => {
-      event.reply('download failed, try again')
-    })
+      const [_, ID] = url?.split('watch?v=')
+
+      let startTime: number
+
+      const options: ytdl.downloadOptions = ext === 'mp3' ? { filter: 'audioonly' } : { filter: 'audioandvideo' }
+
+      const stream = ytdl(`https://www.youtube.com/watch?v=${ID}`, options)
+
+      stream.once('response', () => {
+        startTime = Date.now()
+      })
+
+      stream.on('progress', (chunkLength, downloaded, total) => {
+        const percent = downloaded / total
+        const downloadedSeconds = (Date.now() - startTime) / 1000
+        const estimated = downloadedSeconds / percent - downloadedSeconds
+
+        event.reply('URL:PROGRESS', {
+          percent,
+          downloadedSeconds,
+          estimated,
+        })
+
+        stream.pipe(fs.createWriteStream(`${process.env.USERPROFILE}/Downloads/${title}.${ext}`))
+
+        stream.on('end', () => {
+          event.reply('OK')
+        })
+      })
+    }
   })
 }
 
